@@ -8,8 +8,8 @@ import datetime
 import logging
 import itertools
 
-from .side_functions import *
-from .MSEval import *
+from imgMS.side_functions import *
+from imgMS.MSEval import *
 
 
 class MSData():

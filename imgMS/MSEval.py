@@ -6,7 +6,7 @@ from decimal import Decimal
 import datetime
 import logging
 
-from .side_functions import *
+from imgMS.side_functions import *
 
 
 class DataReader():
