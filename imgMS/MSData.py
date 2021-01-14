@@ -8,8 +8,8 @@ import datetime
 import logging
 import itertools
 
-from side_functions import *
-from MSEval import *
+from .side_functions import *
+from .MSEval import *
 
 
 class MSData():
@@ -78,6 +78,9 @@ class MSData():
     def select(self, method='treshold', s=60, sdmul=10, iolite=None):
         self.selector = Selector(
             self, s=s, sdmul=sdmul, iolite=iolite, logger=self.logger)
+
+        # TODO way to set skip values for selector.
+
         self.selector.method = method
         self.starts, self.ends = self.selector()
         self.laser_on, self.laser_off = self.selector.create_on_off(
