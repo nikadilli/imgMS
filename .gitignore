@@ -131,3 +131,5 @@ dmypy.json
 # imgMS
 log.txt
 
+# macOS
+.DS_Store
