@@ -12,6 +12,13 @@ from imgMS.side_functions import *
 from imgMS.MSEval import *
 
 
+def dummy_func(a, b):
+    """
+    Test if this docstring will get to the RTD and problem is just with classes or problem is with whole module.
+    """
+    return a+b
+
+
 class MSData():
     def __init__(self, datareader, logger=None):
         self.datareader = datareader
@@ -75,11 +82,12 @@ class MSData():
         for key in self.isotope_names:
             self.isotopes[key] = Isotope(key, self, logger=self.logger)
 
-    def select(self, method='treshold', s=60, sdmul=10, iolite=None):
-        self.selector = Selector(
-            self, s=s, sdmul=sdmul, iolite=iolite, logger=self.logger)
-
-        # TODO way to set skip values for selector.
+    def select(self, method='treshold', s=60, sdmul=10, iolite=None, selector=None):
+        if selector is None:
+            self.selector = Selector(
+                self, s=s, sdmul=sdmul, iolite=iolite, logger=self.logger)
+        else:
+            self.selector = selector
 
         self.selector.method = method
         self.starts, self.ends = self.selector()
