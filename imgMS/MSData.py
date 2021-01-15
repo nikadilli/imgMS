@@ -12,13 +12,6 @@ from imgMS.side_functions import *
 from imgMS.MSEval import *
 
 
-def dummy_func(a, b):
-    """
-    Test if this docstring will get to the RTD and problem is just with classes or problem is with whole module.
-    """
-    return a+b
-
-
 class MSData():
     def __init__(self, datareader, logger=None):
         self.datareader = datareader
