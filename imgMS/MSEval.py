@@ -15,18 +15,14 @@ class DataReader():
 
     Parameters
     ----------
+    filename: str
+        Path to file to read.
     filetype : str
         Type of the file to read. If not specified, csv is used. 
         Possible options are csv, xlsx and asc.
     instrument : str
         Type of the instrument used for measurement. If not specified, raw data is expected. 
         Possible options are Agilent, and Element.
-
-    Returns
-    -------
-    data : dataframe
-        `data` as a dataframe, which can be passed to MSData.
-
     """
 
     def __init__(self, filename, filetype=None, instrument=None):
@@ -40,6 +36,26 @@ class DataReader():
         return self.data
 
     def read(self, filename, filetype, instrument):
+        """
+        Reads data into pandas Dataframe from a file.
+
+        Parameters
+        ----------
+        filename: str
+            Path to file to read.
+        filetype : str
+            Type of the file to read. If not specified, csv is used. 
+            Possible options are csv, xlsx and asc.
+        instrument : str
+            Type of the instrument used for measurement. If not specified, raw data is expected. 
+            Possible options are Agilent, and Element.
+
+        Returns
+        -------
+        data : dataframe
+            `data` as a dataframe, which can be passed to MSData.
+        """
+
         if instrument == 'Element':
             skipfooter = 4
             header = 1
@@ -77,6 +93,29 @@ class DataReader():
 
 
 class Background():
+    """
+    Class for calculating and visualising background.
+
+    Parameters
+    ----------
+    isotope : MSData.Isotope
+        Isotope from which background is calculated
+    laser_on : list
+        List of sets, where each set has 2 values (start of the laser and
+        end of the laser.) indicating when the laser was fireing.
+    laser_off : list
+        List of sets, where each set has 2 values (end of the laser and
+        start of the laser.) indicating when the laser wasn't fireing.    
+    offset : float (Optional)
+        Parameter for outlier removal. 
+        1-offset = upper treshold for percentile filtering. 
+        Accepts values between 0 and 1. Default is 0.15.
+    width : float (Optional)
+        Parameter for outlier removal.  Width od returned values, 
+        where 1-offset-width = lower treshold for percentile filtering.
+        Accepts values between 0 and 1. Default is 0.8.
+    """
+
     def __init__(self, isotope, laser_on, laser_off, width=0.8, offset=0.15):
         assert isotope.data is not None
         self.bcg_all = [remove_outliers(
@@ -106,7 +145,6 @@ class Iolite():
     ----------
     path : str
         Path to Iolite .csv file.
-
     """
 
     def __init__(self, path):
@@ -114,16 +152,24 @@ class Iolite():
         self.peak_names = self.names_from_iolite()
 
     def read_iolite(self, path):
+        """
+        Read Iolite file.
+
+        Parameters
+        ----------
+        path : str
+            Path to Iolite .csv file.
+        """
         iolite = pd.read_csv(path, sep=",", engine='python')
         return iolite
 
     def names_from_iolite(self):
+        """
+        Return peak names from iolite. 
+        """
+
         names = list(self.data[' Comment'].dropna())
         return names
-
-
-class Lase():
-    pass
 
 
 class Param():
@@ -134,7 +180,6 @@ class Param():
     ----------
     path : str
         Path to param .xlsx file.
-
     """
 
     def __init__(self, path, logger=None):
@@ -145,6 +190,15 @@ class Param():
         self.logger = logger
 
     def read_names(self):
+        """
+        Read sheet with peak names from Param file.
+
+        Returns
+        ----------
+        names : list
+            List of peak names.
+        """
+
         xl = pd.ExcelFile(self.path)
         if 'names' in xl.sheet_names:
             names = list(xl.parse('names', header=None)[0])
@@ -155,6 +209,15 @@ class Param():
                     'Can not read names of peak from Param file.')
 
     def read_is_coef(self):
+        """
+        Read sheet with internal standard coefficients from Param file.
+
+        Returns
+        ----------
+        internal_std : DataFrame
+            DataFrame with internal standard coefficients.
+        """
+
         xl = pd.ExcelFile(self.path)
         if 'internal standard' in xl.sheet_names:
             internal_std = xl.parse(
@@ -166,6 +229,15 @@ class Param():
                     'Can not read coefficients of internal standards from Param file.')
 
     def read_ts_coef(self):
+        """
+        Read sheet with total sum correction coefficients from Param file.
+
+        Returns
+        ----------
+        internal_std : dict
+            DataFrame with total sum correction coefficients .
+        """
+
         xl = pd.ExcelFile(self.path)
         if 'total sum' in xl.sheet_names:
             sum_koeficients = xl.parse(
@@ -178,6 +250,25 @@ class Param():
 
 
 class Selector():
+    """
+    Class for peak and background identification.
+
+    Parameters
+    ----------
+    ms_data : MSData
+        Mass spectrometry data class, for which the selector will be used.
+    s : float (Optional)
+        Start of first peak in seconds for synchronisation with Iolite data if using 
+        method Iolite or for calculation  of backround standard deviation if using 
+        method treshold. Default is 60s.
+    sdmul: int (Optional)
+        Multiplier for backround standard deviation in method treshold. Default is 10. 
+    iolite: MSEval.Iolite (Optional)
+        Iolite class, only necessary if method is Iolite. Default is None.
+    logger: logger class (optional)
+        If logger is pssed all methods of Selector will log in the activity.
+    """
+
     def __init__(self, ms_data, s=60, sdmul=10, iolite=None, logger=None):
         self.possible_methods = ('treshold', 'iolite')
         self.ms_data = ms_data
@@ -201,7 +292,10 @@ class Selector():
             return self.create_selector_iolite()
 
     def create_selector_iolite(self):
-        """select starts and ends of ablation using iolite file """
+        """
+        Select starts and ends of ablation using iolite file.
+        """
+
         if self.logger is not None:
             self.logger.info('Selecting peak bounds by iolite.')
 
@@ -232,9 +326,10 @@ class Selector():
 
     def create_selector_treshold(self):
         """
-        select starts and ends of ablation based on selected element or sum of all using treshold
-        calculated from background
+        Select starts and ends of ablation based on selected element or sum of all using treshold
+        calculated from background.
         """
+
         if self.logger is not None:
             self.logger.info('Selecting peak bounds by setting treshold.')
         bcg_nr = self.ms_data.time_to_number(self.start)
@@ -253,8 +348,9 @@ class Selector():
 
     def set_skip(self, bcg_s=None, bcg_e=None, sig_s=None, sig_e=None):
         """
-        set time skipped on start and end of background and ablation in seconds
+        Set time skipped on start and end of background and ablation in seconds.
         """
+
         if bcg_s is not None:
             self.skip['bcg_start'] = bcg_s
         if bcg_e is not None:
@@ -266,8 +362,9 @@ class Selector():
 
     def create_on_off(self, starts, ends):
         """
-        from starts and ends of ablation create laser_on and laser_off with skipped values
+        From starts and ends of ablation create laser_on and laser_off with skipped values.
         """
+
         laser_off = []
         laser_on = []
 

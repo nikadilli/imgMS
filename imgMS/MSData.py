@@ -13,6 +13,17 @@ from imgMS.MSEval import *
 
 
 class MSData():
+    """
+    LA-ICP-MS data structure. Primary object for LA-ICP-MS data reduction with imgMS.
+
+    Parameters
+    ----------
+    datareader: MSEval.DataReader
+        Object for reading and import of LA-ICP-MS data.
+    logger: logger class (optional)
+        If logger is pssed all methods of MSData will log in the activity.
+    """
+
     def __init__(self, datareader, logger=None):
         self.datareader = datareader
         self.logger = logger
@@ -39,6 +50,17 @@ class MSData():
         self.create_isotopes()
 
     def __call__(self, isotopes=None, *args, **kwargs):
+        """
+        Plots data in time dependant graph.
+
+        Parameters
+        ----------
+        isotopes: list (optional)
+            List of isotopes to be shown in the plot. |If not specified plots all isotopes in measurement.
+        *args, **kwargs:
+            All other plotting arguments to be passed to matplotlib.pyplot.plot.
+        """
+
         plot_data(self.data, isotopes=isotopes, *args, **kwargs)
 
     def __repr__(self):
@@ -47,9 +69,17 @@ class MSData():
 
     def time_to_number(self, time, integration_time=None):
         """
-        takes time in seconds returns number of measured values
-        depends on integration time of MS method
+        Takes time in seconds returns number of measured values.
+        The result depends on integration time of MS method.
+
+        Parameters
+        ----------
+        time: float
+            Time in seconds to be converted into number of values in data.
+        integration_time: float (optional)
+            Integration time of LA-ICP-MS measurement. If not specified will be calculated from data.
         """
+
         if not integration_time:
             integration_time = (self.time[2]-self.time[1])
         val = int(abs(time)//integration_time)
@@ -58,24 +88,71 @@ class MSData():
         return val
 
     def read_param(self, path):
+        """
+        Import excel file with additional parameters (names of peaks, internal standard values, 
+        total sum correction coefficients) for data reduction. A sample PARAM file can be found in data folder.
+
+        Parameters
+        ----------
+        path: str
+            Path to excel param file.
+        """
+
         self.param = Param(path, self.logger)
         if self.param.peak_names:
             self.names = self.param.peak_names
 
     def read_srms(self, path='./SRM.xlsx'):
+        """
+        Import excel file with standard reference values. Default file is part of the imgMS package
+        and contains values for NIST610, NIST612 and NIST 614.
+
+        Parameters
+        ----------
+        path: str
+            Path to excel SRM file.
+        """
+
         self.srms = pd.ExcelFile(path).parse(index_col=0)
 
     def set_names(self, names):
         """
-        takes list of names of peaks
+        Sets list of names of peaks. The name of SRM must be equal to the name in SRM file.
+
+        Parameters
+        ----------
+        names: list
+            List of names.
         """
+
         self.names = names
 
     def create_isotopes(self):
         for key in self.isotope_names:
             self.isotopes[key] = Isotope(key, self, logger=self.logger)
 
-    def select(self, method='treshold', s=60, sdmul=10, iolite=None, selector=None):
+    def select(self, method='treshold', selector=None, s=60, sdmul=10, iolite=None):
+        """
+        Selects starts and ends of peaks using imgMS.Selector.
+
+        Parameters
+        ----------
+        method: str (optional)
+            Name of the method to be used for identifying peaks. Possible options are 'treshold' and 'iolite'.
+            Default is 'treshold'.
+        selector: MSEval.Selector (optional)
+            Class for identifying peaks. If Selector is passed none of the other parameters are necessary. If not, 
+            Selector is created by selected settings.
+        s: float (optional)
+            Start of the first peak in seconds from the start of analysis. Default is 60. Necessary if Selector is not 
+            passed and used for synchronisation of data with iolite.
+        sdmul: float (optional)
+            Coeficient by which a standard deviation of background is multiplied to calculate treshold. Only used if 
+            method = treshold.
+        iolite: MSEval.Iolite (optional)
+            Iolite class holding data from .Iolite file. Necessary if method = Iolite and Selector not passed.
+        """
+
         if selector is None:
             self.selector = Selector(
                 self, s=s, sdmul=sdmul, iolite=iolite, logger=self.logger)
@@ -87,11 +164,23 @@ class MSData():
         self.laser_on, self.laser_off = self.selector.create_on_off(
             self.starts, self.ends)
 
-    def graph(self, ax=None, logax=False, el=None):
+    def graph(self, ax=None, logax=False, el=None, *args, **kwargs):
         """
-        create matplotlib graph of intensity in time for ablation
-        highlights ablation part and background signal
+        Create matplotlib graph of intensity in time for ablation and highlights peaks and background signal 
+        if the peaks are already identifyied.
+
+        Parameters
+        ----------
+        ax: matplotlib axes (optional)
+            Axes to plot in, if not specified, create new ax.
+        logax: bool (optional)
+            If True use logarythmic x axes. Default False.
+        el: str (optional)
+            Element to plot. If not specified plot all measured elements.
+        *args, **kwargs:
+            All other plotting arguments to be passed to matplotlib.pyplot.plot.
         """
+
         if ax == None:
             fig, ax = plt.subplots()
 
@@ -120,7 +209,6 @@ class MSData():
         if self.laser_off:
             # higlights bacground
             for off in self.laser_off:
-                # print(self.time[off[0]], self.time[off[1]])
                 try:
                     ax.axvspan(
                         self.time[off[0]], self.time[off[1]], alpha=0.2, color='red')
@@ -144,7 +232,7 @@ class MSData():
         bcgcor_method : str
             Method of background calculation. Possible options are [None, 'all', 'beginning', 'end']. Default is 'all'.
         despiked : bool
-            State of data to be corrected. If True use despiked data, else use original. Default is True.
+            If True use despiked data, else use original. Default is True.
         method : str
             Method to get average peaks. Possible options are ['intensity', 'integral']. Default is 'intensity'.
 
@@ -153,6 +241,7 @@ class MSData():
         data : DataFrame
             DF where index are peak names and columns are isotopes
         """
+
         if self.logger is not None:
             self.logger.info(
                 f'Averaging of signal using despiking: {despiked}, bcgcor: {bcgcor_method}, method: {method}.')
@@ -171,6 +260,20 @@ class MSData():
         return self.means
 
     def quantify_isotopes(self, srm_name='NIST610'):
+        """
+        Calculate quantified value for all peaks for all isotopes.
+
+        Parameters
+        ----------
+        srm_name : str
+            Standard reference material used for quantification. The name must be at least one of the 
+            peaks and listed in SRM file.
+        Returns
+        -------
+        data : DataFrame
+            Quantified data in DF where index are peak names and columns are isotopes
+        """
+
         self.quantified = pd.DataFrame()
         for el, isotope in self.isotopes.items():
             isotope.quantify(srm_name=srm_name)
@@ -185,13 +288,14 @@ class MSData():
 
     def IS_correction(self):
         """
-        Calculates correction for each element given in internal standard correction from PARAM file
+        Calculates correction for each element given in internal standard correction 
+        from PARAM file.
 
         Returns
         -------
         corrected data : dict
-            dict of internal standards used for correction as keys and DataFrames where index 
-            are peak names and columns are isotopes with values in ppm. 
+            dict of internal standards used for correction as keys and DataFrames 
+            where index are peak names and columns are isotopes with values in ppm. 
         """
         self.corrected_IS = {}
 
@@ -215,14 +319,20 @@ class MSData():
 
     def TS_correction(self, suma=1000000, skip_isotopes=[]):
         """
-        Calculates total sum correction using coefficients given in PARAM file.
+        Calculates total sum correction [1] using coefficients given in PARAM file. 
+        If coefficients in PARAM file are not given, uses default values. Default values
+        assume all elements are in most common oxide form.
+
+        [1] Liu, Y., Hu, Z., Gao, S., Günther, D., Xu, J., Gao, C. and Chen, H., 2008. 
+        In situ analysis of major and trace elements of anhydrous minerals by LA-ICP-MS 
+        without applying an internal standard. Chemical Geology, 257(1-2), pp.34-43.
 
         Parameters
         ----------
         suma : float
             Total sum of measured elements in ppm used for correction. 
             Normally is equal to 100% (default).
-        skip_isotopes: list
+        skip_isotopes : list
             List of isotopes to be skipped, in total sum correction one element 
             can't be measured on multiple isotopes.
 
@@ -283,7 +393,7 @@ class MSData():
             Possible methods ['integral','intensity']. LoD must be calculates same way as average of isotopes. 
         scale : str
             Possible methods ['beginning', 'all']. LoD must be calculates same way as average of isotopes. 
-        ablation_time: int
+        ablation_time : int
             Time in seconds of one ablation. Necessary only for method 'integral'. 
         """
         if self.logger is not None:
@@ -352,10 +462,38 @@ class MSData():
         writer.save()
 
     def create_maps(self, despiked=False, bcgcor_method='all', dx=1, dy=1):
+        """
+        Create elemental distribution matrix for all isotopes.
+
+        Parameters
+        ----------
+        despiked : bool
+            If True use despiked data, else use original. Default is False.
+        bcgcor_method : str
+            Method of background calculation. Possible options are [None, 
+            'all', 'beginning', 'end']. Default is 'all'.
+        dx : float
+            X-axis distance between two values, usually in μm. Can be 
+            calculated by (scan speed [μm/s]/ integration time [s])
+        dy : float
+            Y-axis distance between two values, usually in μm. Distance 
+            between two lines, usually equal to ablation spot size.)
+        """
+
         for el, isotope in self.isotopes.items():
             isotope.elemental_distribution(despiked, bcgcor_method, dx, dy)
 
     def export_matrices(self, path):
+        """
+        Export all elemental distribution data to excel file. Each isotope 
+        will be a matrix on one sheet.
+
+        Parameters
+        ----------
+        path : str
+            Path to excel file where to save data. 
+        """
+
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
         for el, isotope in self.isotopes.items():
             df = pd.DataFrame(isotope.elmap.matrix,
@@ -364,6 +502,15 @@ class MSData():
         writer.save()
 
     def import_matrices(self, path):
+        """
+        Import all elemental distribution data from excel file. Each isotope 
+        will be a matrix on one sheet.
+
+        Parameters
+        ----------
+        path : str
+            Path to the excel file. 
+        """
         for el, isotope in self.isotopes.items():
             isotope.elmap.read_matrix(path, el)
 
@@ -383,10 +530,9 @@ class Isotope():
     -------
     data : array
         `data` interpreted as an array.
-
     """
 
-    def __init__(self, isotope_name, ms_data, logger=None, *args, **kwargs):
+    def __init__(self, isotope_name, ms_data, logger=None):
         self.isotope_name = elem_resolution(isotope_name)
         self.ms_data = ms_data
         self.isotope_number = int(
@@ -400,10 +546,7 @@ class Isotope():
         self.ratio = None
         self.quantified = None
         self.elmap = None
-        self.logger = logger
-
-        # TODO use self.despiked as a state, in next functions if despiked is True, use that
-        # values if they exists, if not do despike if false use original
+        self.logger = loggers
 
     def __len__(self):
         return len(self.data)
@@ -427,9 +570,26 @@ class Isotope():
     def __delitem__(self, i): del(self.data[i])
 
     def element(self):
+        """
+        Returns name of the element.
+        """
+
         return ''.join([c for c in self.isotope_name if c.isalpha()])
 
     def despike(self, win=3, treshold=10):
+        """
+        Removes high outliers of the data using rolling mean and standard deviation.
+        Replace values that are greater than n standard deviations above the mean 
+        with the mean adjacent values.
+
+        Parameters
+        ----------
+        win: int
+            Window for rolling mean.
+        tresholds: int
+            Multiplier of std above which values will be replaced.
+        """
+
         sig = pd.Series(self.data)
         skip = int((win-1)/2)
         outliers = np.zeros(len(sig), dtype=bool)
@@ -530,6 +690,7 @@ class Isotope():
     def quantify(self, srm_name='NIST610'):
         """
         Calculate quantification of average peaks in Isotope.
+
         Parameters
         ----------
         srm_name : str
@@ -573,6 +734,7 @@ class Isotope():
     def detection_limit(self, method='intensity', scale='all', ablation_time=60):
         """
         Calculate limit of detection for isotope.
+
         Parameters
         ----------
         method : str
@@ -593,6 +755,22 @@ class Isotope():
             self.lod = (bcg.std()*3*self.ratio)
 
     def elemental_distribution(self, despiked=False, bcgcor_method='all', dx=1, dy=1):
+        """
+        Creates ElementalMap from Isotope data.
+
+        Parameters
+        ----------
+        despiked : bool (Optional)
+            State of data to be corrected. If True use despiked data, false use original. Default is False.
+        bcgcor_method : str (Optional)
+            Method of background calculation. Possible options are [None, 'all', 'beginning', 'end']. Default is 'all'.
+        dx : float
+            X-axis distance between two values, usually in μm. Can be 
+            calculated by (scan speed [μm/s]/ integration time [s])
+        dy : float
+            Y-axis distance between two values, usually in μm. Distance 
+            between two lines, usually equal to ablation spot size.)
+        """
 
         laser_on = self.ms_data.laser_on
 
@@ -625,6 +803,17 @@ class Isotope():
 
 
 class Peak():
+    """
+    Separate one peak of isotope data. 
+
+    Parameters
+    ----------
+    isotope: MSData.Isotope
+        Isotope to use for peak extraction.
+    bounds: set
+        Set of 2 values, start and end of peak.
+    """
+
     def __init__(self, isotope, bounds):
         if isotope.data is None:
             raise ValueError(
@@ -645,6 +834,7 @@ class ElementalMap():
     def __init__(self, matrix=None, dx=None, dy=None):
         """
         Class of Elemental map holding data from MSData representing elemental distribution of one isotope.
+
         Parameters
         ----------
         matrix : numpy matrix
@@ -692,12 +882,17 @@ class ElementalMap():
         return f'{self.__class__.__name__}: {self.matrix.shape}'
 
     def create_xy(self):
+        """
+        Create values of x and y axis from dx and dy.
+        """
+
         self.x = [i*self.dx for i in range(self.matrix.shape[1])]
         self.y = [i*self.dy for i in range(self.matrix.shape[0])]
 
     def read_matrix(self, path, el):
         """
         Import created map from excel, where each isotope is on one list.
+
         Parameters
         ----------
         path : str
@@ -705,6 +900,7 @@ class ElementalMap():
         el: str
             Name of isotope to import.
         """
+
         file = pd.ExcelFile(path)
         df = file.parse(el, index_col=0)
         self.matrix = np.matrix(df)
@@ -723,13 +919,17 @@ class ElementalMap():
         el: str
             Name of isotope to export. Will be used as sheet name.
         """
+
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
         df = pd.DataFrame(self.matrix, index=self.y, columns=self.x)
         df.to_excel(writer, sheet_name=el)
         writer.save()
 
     def rotate(self):
-        """Rotate map by 90 degrees"""
+        """
+        Rotate map by 90 degrees.
+        """
+
         self.matrix = np.rot90(self.matrix)
         self.x, self.y = self.y, self.x
 
@@ -744,4 +944,5 @@ class ElementalMap():
         will flip over all of the axes, axis=0 flip matrix vertically, 
         axis=1 flip matrixhorizontally.
         """
+
         self.matrix = np.flip(self.matrix, axis)
