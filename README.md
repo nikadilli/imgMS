@@ -3,9 +3,9 @@
 # imgMS
 
 ## Introduction
-LA-ICP-MS data require high level of manual processing to achieve results. Often the time needed for data evaluation by far exceeds the time necessary for data aquisition. During analysis, mass spectra are either written as a separate files, or as a continuous data stream into one single file. Both of these aproaches require a different workflow of processing steps. 'imgMS' is a Python package which aims to provide an easy and intuitive way of working with LA-ICP-MS data acquired into single file.
+LA-ICP-MS data require high level of manual processing to achieve results. Often the time needed for data evaluation by far exceeds the time necessary for data aquisition. During analysis, mass spectra are either written as a separate files, or as a continuous data stream into one single file. Both of these aproaches require a different workflow of processing steps. *imgMS* is a Python package which aims to provide an easy and intuitive way of working with LA-ICP-MS data acquired into single file.
 
-'imgMS' automatically processes these steps of analysis:
+*imgMS* automatically processes these steps of analysis:
 1. bacground/signal identification
 2. signal despiking
 3. background substraction
@@ -20,9 +20,9 @@ As a Phd student in the field of analytical chemistry using LA-ICP-MS for rutine
 
 This package is intended to provide a quick, as well as (hopefully) easy to undestand, way of getting a results from bulk analysis or elemental imaging using LA-ICP-MS.
 
-## Instalation
+## Installation
 
-'imgMS' is a python package registered at PyPI, and therefore can be installed with pip:
+*imgMS* is a python package registered at PyPI, and therefore can be installed with pip:
 
 ```
 pip install imgMS
