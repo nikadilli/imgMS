@@ -37,7 +37,7 @@ def get_index(data, time):
     """return closest index of MS time given time in seconds"""
     for i in range(len(data.index)-1):
         if (data.index[i] <= time) and (data.index[i+1] > time):
-            return i+1
+            return i
 
 
 def get_diff_lst(iolite):
