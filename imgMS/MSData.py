@@ -546,7 +546,7 @@ class Isotope():
         self.ratio = None
         self.quantified = None
         self.elmap = None
-        self.logger = loggers
+        self.logger = logger
 
     def __len__(self):
         return len(self.data)
