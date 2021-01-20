@@ -277,7 +277,7 @@ class MSData():
         self.quantified = pd.DataFrame()
         for el, isotope in self.isotopes.items():
 
-            if el not in self.srms.colimns:
+            if el not in self.srms.columns:
                 if self.logger is not None:
                     self.logger.error(f'Missing srm {el}.')
 
