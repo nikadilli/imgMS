@@ -164,7 +164,7 @@ class MSData():
         self.laser_on, self.laser_off = self.selector.create_on_off(
             self.starts, self.ends)
 
-    def graph(self, ax=None, logax=False, el=None, *args, **kwargs):
+    def graph(self, fig=None, ax=None, logax=False, el=None, *args, **kwargs):
         """
         Create matplotlib graph of intensity in time for ablation and highlights peaks and background signal 
         if the peaks are already identifyied.
@@ -181,7 +181,7 @@ class MSData():
             All other plotting arguments to be passed to matplotlib.pyplot.plot.
         """
 
-        if ax == None:
+        if ax == None or fig == None:
             fig, ax = plt.subplots()
 
         ax.cla()
@@ -193,7 +193,7 @@ class MSData():
             self.data.plot(ax=ax, kind='line', legend=True)
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                       fancybox=True, shadow=True, ncol=10)
-        plt.tight_layout()
+        fig.tight_layout()
 
         if logax:
             ax.set_yscale('log')
@@ -486,7 +486,7 @@ class MSData():
 
     def quantify_maps(self, slopes, intercepts):
         """
-        Create elemental distribution matrix for all isotopes.
+        Calculate quantification for elemental distribution matrix for all isotopes.
 
         Parameters
         ----------
