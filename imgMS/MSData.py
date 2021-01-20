@@ -193,6 +193,7 @@ class MSData():
             self.data.plot(ax=ax, kind='line', legend=True)
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
                       fancybox=True, shadow=True, ncol=10)
+        plt.tight_layout()
 
         if logax:
             ax.set_yscale('log')
@@ -482,6 +483,21 @@ class MSData():
 
         for el, isotope in self.isotopes.items():
             isotope.elemental_distribution(despiked, bcgcor_method, dx, dy)
+
+    def quantify_maps(self, slopes, intercepts):
+        """
+        Create elemental distribution matrix for all isotopes.
+
+        Parameters
+        ----------
+        intercepts : dict
+            Dict of intercepts for each isotope.
+        slopes : dict
+            Dict of slopes for each isotope.
+        """
+
+        for el, isotope in self.isotopes.items():
+            isotope.elmap.quantify_map(slopes[el], intercepts[el])
 
     def export_matrices(self, path):
         """
@@ -847,9 +863,10 @@ class ElementalMap():
         self.matrix = matrix
         self.dx = dx
         self.dy = dy
+        self.qmap = None
         self.create_xy()
 
-    def __call__(self, fig=None, ax=None, units='', axis=True, clb=True, *args, **kwargs):
+    def __call__(self, fig=None, ax=None, units='', axis=True, clb=True, quantified=False, *args, **kwargs):
         """
         Show image of elemental map.
         Parameters
@@ -862,13 +879,18 @@ class ElementalMap():
             If true then show axis with labels in the image.
         clb : boolean
             Wheather to show colorbal in image.
+        quantified : bool (optional)
+            Whether to plot intensities or quantified map. Default False.
         """
         if fig is None or ax is None:
             fig, ax = plt.subplots()
         ax.cla()
-
-        im = plt.imshow(self.matrix, extent=[
-                        0, self.x[-1], self.y[-1], 0], *args, **kwargs)
+        if quantified is False:
+            im = plt.imshow(self.matrix, extent=[
+                            0, self.x[-1], self.y[-1], 0], *args, **kwargs)
+        else:
+            im = plt.imshow(self.qmap, extent=[
+                0, self.x[-1], self.y[-1], 0], *args, **kwargs)
 
         if not axis:
             ax.axis('off')
@@ -946,3 +968,17 @@ class ElementalMap():
         """
 
         self.matrix = np.flip(self.matrix, axis)
+
+    def quantify_map(self, slope, intercept=0):
+        """
+        Quantify elemental map.
+
+        Parameters
+        ----------
+        slope: float
+            Slope of linear regression for quantification.
+        intercept: float
+            Intercept of linear regression for quantification.
+        """
+
+        self.qmap = (self.matrix-intercept)/slope
