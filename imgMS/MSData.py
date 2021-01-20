@@ -41,7 +41,7 @@ class MSData():
         self.laser_off, self.laser_on = None, None
         self.names = None
         self.srms = None
-        self.average_peaks = None
+        self.means = None
         self.quantified = None
         self.lod = None
         self.corrected_IS = None
@@ -191,10 +191,8 @@ class MSData():
             self.data.plot(ax=ax, y=el, kind='line', legend=False)
         else:
             self.data.plot(ax=ax, kind='line', legend=True)
-            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05),
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.075),
                       fancybox=True, shadow=True, ncol=10)
-
-        ax.autoscale(enable=True, axis='both', tight=True)
 
         if logax:
             ax.set_yscale('log')
@@ -278,6 +276,11 @@ class MSData():
 
         self.quantified = pd.DataFrame()
         for el, isotope in self.isotopes.items():
+
+            if el not in self.srms.colimns:
+                if self.logger is not None:
+                    self.logger.error(f'Missing srm {el}.')
+
             isotope.quantify(srm_name=srm_name)
             self.quantified[el] = isotope.quantified
 
@@ -555,6 +558,7 @@ class Isotope():
         self.isotope_number = int(
             ''.join([c for c in self.isotope_name if c.isnumeric()]))
         self.data = ms_data.data[isotope_name].values
+        self.time = ms_data.data.index
         self.despiked = None
         self.bcg = None
         self.bcg_corrected = None
@@ -635,9 +639,8 @@ class Isotope():
                     'Bacground correction requires selection of peaks first.')
             return
 
-        if self.bcgcor_method != method:
-            self.bcg = Background(
-                self, self.ms_data.laser_on, self.ms_data.laser_off)
+        self.bcg = Background(
+            self, self.ms_data.laser_on, self.ms_data.laser_off)
 
         if not despiked:
             data = np.copy(self.data)
@@ -678,9 +681,11 @@ class Isotope():
         laser_on = self.ms_data.laser_on
 
         if bcgcor_method is not None:
-            if self.bcg_corrected is None:
+            if self.bcg_corrected is None or self.bcgcor_method != bcgcor_method:
                 self.bcg_correction(method=bcgcor_method, despiked=despiked)
-            data = np.copy(self.bcg_corrected)
+                data = np.copy(self.bcg_corrected)
+            else:
+                data = np.copy(self.bcg_corrected)
         else:
             if not despiked:
                 data = np.copy(self.data)
@@ -695,7 +700,7 @@ class Isotope():
                 means.append(np.mean(data[on[0]:on[1]]))
             elif method == 'integral':
                 sample_y = data[on[0]:on[1]]
-                sample_x = data.index[on[0]:on[1]]
+                sample_x = self.time[on[0]:on[1]]
                 means.append(np.trapz(sample_y, sample_x))
             else:
                 if self.logger is not None:
@@ -766,6 +771,12 @@ class Isotope():
                 list(itertools.chain.from_iterable(self.bcg.bcg_all)))
         elif scale == 'beginning':
             bcg = np.array(self.bcg.bcg_all[0])
+        elif scale == 'end':
+            bcg = np.array(self.bcg.bcg_all[-1])
+        else:
+            if self.logger is not None:
+                self.logger.error(f'Unknown scale: {scale}.')
+
         if method == 'integral':
             self.lod = (bcg.std()*ablation_time*self.ratio)
         elif method == 'intensity':
