@@ -24,16 +24,17 @@ class MSData():
         If logger is pssed all methods of MSData will log in the activity.
     """
 
-    def __init__(self, datareader, logger=None):
-        self.datareader = datareader
-        self.logger = logger
+    def __init__(self, datareader=None, logger=None):
+        if datareader is not None:
+            self.datareader = datareader
+            self.logger = logger
+            self.data = self.datareader()
+            self.data.index = list(map(float, self.data.index))
+            self.time = np.array(self.data.index)
+            self.matrix = self.data.values
+            self.isotope_names = np.array(self.data.columns)
         if self.logger is not None:
             self.logger.info(f'Reading data {self.datareader.filename}.')
-        self.data = self.datareader()
-        self.data.index = list(map(float, self.data.index))
-        self.time = np.array(self.data.index)
-        self.matrix = self.data.values
-        self.isotope_names = np.array(self.data.columns)
         self.isotopes = {}
         self.param = None
         self.selector = None
@@ -552,13 +553,14 @@ class Isotope():
         `data` interpreted as an array.
     """
 
-    def __init__(self, isotope_name, ms_data, logger=None):
+    def __init__(self, isotope_name, ms_data=None, logger=None):
         self.isotope_name = elem_resolution(isotope_name)
-        self.ms_data = ms_data
+        if ms_data is not None:
+            self.ms_data = ms_data
+            self.data = ms_data.data[isotope_name].values
+            self.time = ms_data.data.index
         self.isotope_number = int(
             ''.join([c for c in self.isotope_name if c.isnumeric()]))
-        self.data = ms_data.data[isotope_name].values
-        self.time = ms_data.data.index
         self.despiked = None
         self.bcg = None
         self.bcg_corrected = None
@@ -878,7 +880,7 @@ class ElementalMap():
         self.qmap = None
         self.create_xy()
 
-    def __call__(self, fig=None, ax=None, units='', axis=True, clb=True, quantified=False, *args, **kwargs):
+    def __call__(self, fig=None, ax=None, units='', axis=True, clb=True, quantified=False, title='', *args, **kwargs):
         """
         Show image of elemental map.
         Parameters
@@ -887,21 +889,23 @@ class ElementalMap():
             Axes where plot will be drawn, if None new axes will be created.
         units : str
             Label for colorbar
-        axis : boolean
-            If true then show axis with labels in the image.
-        clb : boolean
-            Wheather to show colorbal in image.
+        axis : boolean (Optional)
+            If true then show axis with labels in the image. Default is True.
+        clb : boolean (Optional)
+            Wheather to show colorbal in image. Default is True.
         quantified : bool (optional)
-            Whether to plot intensities or quantified map. Default False.
+            Whether to plot intensities or quantified map. Default is False.
+        title: str (Optional)
+            Figure title to be used. Default is no title.
         """
         if fig is None or ax is None:
             fig, ax = plt.subplots()
         ax.cla()
         if quantified is False:
-            im = plt.imshow(self.matrix, extent=[
-                            0, self.x[-1], self.y[-1], 0], *args, **kwargs)
+            im = ax.imshow(self.matrix, extent=[
+                0, self.x[-1], self.y[-1], 0], *args, **kwargs)
         else:
-            im = plt.imshow(self.qmap, extent=[
+            im = ax.imshow(self.qmap, extent=[
                 0, self.x[-1], self.y[-1], 0], *args, **kwargs)
 
         if not axis:
@@ -911,6 +915,8 @@ class ElementalMap():
             cax = divider.append_axes("right", size="5%", pad=0.05)
             clb = fig.colorbar(im, cax=cax)
             clb.ax.set_title(units)
+
+        fig.suptitle(title)
 
     def __repr__(self):
         return f'{self.__class__.__name__}: {self.matrix.shape}'
