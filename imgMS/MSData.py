@@ -35,6 +35,16 @@ class MSData():
             self.isotope_names = np.array(self.data.columns)
             if self.logger is not None:
                 self.logger.info(f'Reading data {self.datareader.filename}.')
+        else:
+            self.datareader = None
+            self.data = None
+            self.data.index = None
+            self.time = None
+            self.matrix = None
+            self.isotope_names = []
+            if self.logger is not None:
+                self.logger.info(f'Creating empty MSData.')
+
         self.isotopes = {}
         self.param = None
         self.selector = None
