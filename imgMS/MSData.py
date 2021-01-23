@@ -38,7 +38,6 @@ class MSData():
         else:
             self.datareader = None
             self.data = None
-            self.data.index = None
             self.time = None
             self.matrix = None
             self.isotope_names = []
