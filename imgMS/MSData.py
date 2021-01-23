@@ -504,7 +504,7 @@ class MSData():
         for el, isotope in self.isotopes.items():
             isotope.elmap.quantify_map(slopes[el], intercepts[el])
 
-    def export_matrices(self, path):
+    def export_matrices(self, path, quantified=False):
         """
         Export all elemental distribution data to excel file. Each isotope 
         will be a matrix on one sheet.
@@ -517,8 +517,12 @@ class MSData():
 
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
         for el, isotope in self.isotopes.items():
-            df = pd.DataFrame(isotope.elmap.matrix,
-                              index=isotope.elmap.y, columns=isotope.elmap.x)
+            if quantified is False:
+                df = pd.DataFrame(isotope.elmap.matrix,
+                                  index=isotope.elmap.y, columns=isotope.elmap.x)
+            else:
+                df = pd.DataFrame(isotope.elmap.qmap,
+                                  index=isotope.elmap.y, columns=isotope.elmap.x)
             df.to_excel(writer, sheet_name=el)
         writer.save()
 
@@ -910,6 +914,7 @@ class ElementalMap():
 
         if not axis:
             ax.axis('off')
+
         if clb:
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="5%", pad=0.05)
