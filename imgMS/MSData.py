@@ -25,16 +25,16 @@ class MSData():
     """
 
     def __init__(self, datareader=None, logger=None):
+        self.logger = logger
         if datareader is not None:
             self.datareader = datareader
-            self.logger = logger
             self.data = self.datareader()
             self.data.index = list(map(float, self.data.index))
             self.time = np.array(self.data.index)
             self.matrix = self.data.values
             self.isotope_names = np.array(self.data.columns)
-        if self.logger is not None:
-            self.logger.info(f'Reading data {self.datareader.filename}.')
+            if self.logger is not None:
+                self.logger.info(f'Reading data {self.datareader.filename}.')
         self.isotopes = {}
         self.param = None
         self.selector = None
