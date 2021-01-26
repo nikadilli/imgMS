@@ -891,7 +891,8 @@ class ElementalMap():
         self.dx = dx
         self.dy = dy
         self.qmap = None
-        self.create_xy()
+        if self.matrix is not None and self.dx is not None and self.dy is not None:
+            self.create_xy()
 
     def __call__(self, fig=None, ax=None, units='', axis=True, clb=True, quantified=False, title='', *args, **kwargs):
         """
