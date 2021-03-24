@@ -370,6 +370,10 @@ class MSData():
             ts_coef = pd.ExcelFile(
                 './default_sum_koef.xlsx').parse(0, index_col=0, header=None).to_dict()[1]
 
+        if self.logger is not None:
+            self.logger.info(
+                f'Using these coeficients for total sum: {ts_coef}.')
+
         self.corrected_TS = self.quantified.copy()
         self.corrected_TS.drop(skip_isotopes, axis=1, inplace=True)
 

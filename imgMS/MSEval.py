@@ -333,8 +333,8 @@ class Selector():
         if self.logger is not None:
             self.logger.info('Selecting peak bounds by setting treshold.')
         bcg_nr = self.ms_data.time_to_number(self.start)
-        bcg = self.filter_line[0:bcg_nr].mean()
-        std = self.filter_line[0:bcg_nr].std()
+        bcg = self.filter_line.iloc[0:bcg_nr].mean()
+        std = self.filter_line.iloc[0:bcg_nr].std()
         ind = [True if value > bcg+self.sdmul *
                std else False for value in self.filter_line]
         ind2 = ind[1:]
