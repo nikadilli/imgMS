@@ -442,7 +442,7 @@ class MSData():
         if self.corrected_TS is not None:
             self.corrected_TS = self.corrected_TS.append(self.lod)
             for column in self.corrected_TS:
-                elem = element_formater(column, self.lod.names)
+                elem = element_formater(column, list(self.lod.index))
                 self.corrected_TS[column] = [
                     report(value, self.lod, elem) for value in self.corrected_TS[column]]
 
