@@ -332,7 +332,7 @@ class MSData():
                     self.quantified, el, self.param.is_coef))
         return self.corrected_IS
 
-    def TS_correction(self, suma=1000000, skip_isotopes=[]):
+    def TS_correction(self, suma=1000000, skip_isotopes=[], return_oxides=False):
         """
         Calculates total sum correction [1] using coefficients given in PARAM file. 
         If coefficients in PARAM file are not given, uses default values. Default values
@@ -350,6 +350,9 @@ class MSData():
         skip_isotopes : list
             List of isotopes to be skipped, in total sum correction one element 
             can't be measured on multiple isotopes.
+        return_oxides : bool
+            If True return data in oxide form as was used for total sum correction. 
+            Default is False.
 
         Returns
         -------
@@ -383,22 +386,28 @@ class MSData():
                 self.logger.warning(
                     'Multiple isotopes of one element measured. Recomended to use only one isotope for total sum correction.')
 
+        # calculate oxide form of specified elements
         for key in ts_coef:
             elem = element_formater(key, self.corrected_TS.columns)
             if not elem:
                 continue
             self.corrected_TS[elem] = self.corrected_TS[elem] / \
                 ts_coef[key] * 100
-
+        # calculate coefficient for correction and correct data
         koef = suma/self.corrected_TS.sum(1)
-
         self.corrected_TS = self.corrected_TS.mul(list(koef), axis='rows')
-        for key in ts_coef:
-            elem = element_formater(key, self.corrected_TS.columns)
-            if not elem:
-                continue
-            self.corrected_TS[elem] = self.corrected_TS[elem] * \
-                ts_coef[key] / 100
+
+        # Return oxide form back to isotopes if not specified otherwise
+        if not return_oxides:
+            for key in ts_coef:
+                elem = element_formater(key, self.corrected_TS.columns)
+                if not elem:
+                    continue
+                self.corrected_TS[elem] = self.corrected_TS[elem] * \
+                    ts_coef[key] / 100
+        else:
+            ox_names = {el: el + ' oxide' for el in ts_coef.keys()}
+            self.corrected_TS.rename(columns=ox_names, inplace=True)
 
         return self.corrected_TS
 
