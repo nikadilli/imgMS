@@ -440,7 +440,9 @@ class MSData():
         If the value is above LoD, round to specific decimal place.
         """
         if self.corrected_TS is not None:
-            self.corrected_TS = self.corrected_TS.append(self.lod)
+            ts_lod = pd.Series({el: self.lod[el] if el in self.lod.index else self.lod[el.replace(
+                ' oxide', '')] for el in self.corrected_TS.columns})
+            self.corrected_TS = self.corrected_TS.append(ts_lod)
             for column in self.corrected_TS:
                 elem = element_formater(column, list(self.lod.index))
                 self.corrected_TS[column] = [
