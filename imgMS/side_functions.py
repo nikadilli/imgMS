@@ -162,30 +162,35 @@ def element_formater(elem, lst_of_elems):
     if elem in lst_of_elems:
         return elem
     elif elem not in lst_of_elems:
-        elem = elem.replace('(LR)', '').replace('(MR)', '').replace('(HR)', '')
+        elem = elem.replace(' oxide', '')
         if elem in lst_of_elems:
             return elem
         elif elem not in lst_of_elems:
-            elem = elem + '(LR)'
+            elem = elem.replace('(LR)', '').replace(
+                '(MR)', '').replace('(HR)', '')
             if elem in lst_of_elems:
                 return elem
             elif elem not in lst_of_elems:
-                elem = elem.replace('(LR)', '')
-                elem = elem + '(MR)'
+                elem = elem + '(LR)'
                 if elem in lst_of_elems:
                     return elem
                 elif elem not in lst_of_elems:
-                    elem = elem.replace('(MR)', '')
-                    elem = elem + '(HR)'
+                    elem = elem.replace('(LR)', '')
+                    elem = elem + '(MR)'
                     if elem in lst_of_elems:
                         return elem
                     elif elem not in lst_of_elems:
-                        elem = elem.replace('(HR)', '')
-                        elem = ''.join([c for c in elem if c.isalpha()])
+                        elem = elem.replace('(MR)', '')
+                        elem = elem + '(HR)'
                         if elem in lst_of_elems:
                             return elem
-                        else:
-                            return
+                        elif elem not in lst_of_elems:
+                            elem = elem.replace('(HR)', '')
+                            elem = ''.join([c for c in elem if c.isalpha()])
+                            if elem in lst_of_elems:
+                                return elem
+                            else:
+                                return
 
 
 def report(x, LoD, elem):

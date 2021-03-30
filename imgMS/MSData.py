@@ -442,8 +442,9 @@ class MSData():
         if self.corrected_TS is not None:
             self.corrected_TS = self.corrected_TS.append(self.lod)
             for column in self.corrected_TS:
+                elem = element_formater(column, self.lod.names)
                 self.corrected_TS[column] = [
-                    report(value, self.lod, column) for value in self.corrected_TS[column]]
+                    report(value, self.lod, elem) for value in self.corrected_TS[column]]
 
         if self.corrected_IS is not None:
             self.corrected_IS = {key: df.append(self.lod)
