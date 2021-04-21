@@ -814,7 +814,7 @@ class Isotope():
             elif method == 'intensity':
                 self.lod = (bcg.std()*3*self.ratio)
         else:
-            self.lod = None
+            self.lod = 0
 
     def elemental_distribution(self, despiked=False, bcgcor_method='all', dx=1, dy=1):
         """
