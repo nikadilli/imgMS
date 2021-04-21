@@ -287,7 +287,7 @@ class MSData():
         self.quantified = pd.DataFrame()
         for el, isotope in self.isotopes.items():
 
-            if el not in self.srms.columns:
+            if element_strip(el) not in self.srms.columns:
                 if self.logger is not None:
                     self.logger.error(f'Missing srm {el}.')
 
@@ -808,10 +808,13 @@ class Isotope():
             if self.logger is not None:
                 self.logger.error(f'Unknown scale: {scale}.')
 
-        if method == 'integral':
-            self.lod = (bcg.std()*ablation_time*self.ratio)
-        elif method == 'intensity':
-            self.lod = (bcg.std()*3*self.ratio)
+        if self.ratio is not None:
+            if method == 'integral':
+                self.lod = (bcg.std()*ablation_time*self.ratio)
+            elif method == 'intensity':
+                self.lod = (bcg.std()*3*self.ratio)
+        else:
+            self.lod = None
 
     def elemental_distribution(self, despiked=False, bcgcor_method='all', dx=1, dy=1):
         """
