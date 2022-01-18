@@ -8,6 +8,8 @@ import logging
 
 from imgMS.side_functions import *
 
+from IPython.core.debugger import set_trace
+
 
 class DataReader():
     """
@@ -118,10 +120,24 @@ class Background():
 
     def __init__(self, isotope, laser_on, laser_off, width=0.8, offset=0.15):
         assert isotope.data is not None
-        self.bcg_all = [remove_outliers(
-            isotope.data[laser_off[i][0]:laser_off[i][1]], offset, width) for i in range(len(laser_off))]
+
+        # bacground only from the begining
+        self.bcg_begining = [isotope.data[:laser_on[0][0]].mean()
+                             for i in range(len(laser_off))]
+
+        # background by means
+        self.bcg_all = []
+        for i in range(len(laser_off)):
+            data_points = isotope.data[laser_off[i][0]:laser_off[i][1]]
+            if len(data_points) == 0:
+                data_points = [0]
+            if len(data_points) > 0:
+                data_points = remove_outliers(data_points, offset, width)
+            self.bcg_all.append(data_points)
+
         self.bcg_means = [x.mean() for x in self.bcg_all]
 
+        # background by interpolation
         bcg_mskd = np.copy(isotope.data)
         for (s, e) in laser_on:
             bcg_mskd[s-2:e+2] = np.nan

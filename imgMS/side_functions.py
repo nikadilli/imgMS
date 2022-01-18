@@ -111,6 +111,9 @@ def remove_outliers(data, offset, width):
     upper, lower = np.percentile(data, [round(
         100*(1-offset), 4), round(100*(1-offset-width), 4)])  # round to clear float error
 
+    import pdb
+    pdb.set_trace()
+
     data_out = np.array([x for x in data if x >= lower and x <= upper])
 
     return data_out
