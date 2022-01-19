@@ -738,7 +738,7 @@ class Isotope():
                     self.logger.error(
                         'Select correct method for peak averaging. Possible options: [\'intensity\', \'integral\']')
                 return
-        self.means = means
+        self.means = np.array(means)
 
     def quantify(self, srm_name='NIST610'):
         """
@@ -777,12 +777,26 @@ class Isotope():
                 self.logger.error(f'Unknown isotope: {self.isotope_name}.')
             return
 
-        spots = np.array(
-            [m for m, s in zip(self.means, self.ms_data.names) if s != srm_name])
-        stdsig = np.mean(
-            [[m for m, s in zip(self.means, self.ms_data.names) if s == srm_name]])
+        import pdb
+        pdb.set_trace()
+
+        if self.ms_data.names.count(srm_name) < 2:
+            stdsig = np.mean(
+                [[m for m, s in zip(self.means, self.ms_data.names) if s == srm_name]])
+        else:
+            stdsig_mskd = np.array(
+                [m if s == srm_name else np.nan for m, s in zip(self.means, self.ms_data.names)])
+            not_nan = np.logical_not(np.isnan(stdsig_mskd))
+            indices = np.arange(len(stdsig_mskd))
+            stdsig = np.interp(indices, indices[not_nan], stdsig_mskd[not_nan])
+
+        # TODO: interpolate standard signal by time, not every spot has to be the same length?
+
         self.ratio = srm[element_strip(self.isotope_name)]/stdsig
-        self.quantified = spots * self.ratio
+        quantified = self.means * self.ratio
+
+        self.quantified = np.array(
+            [q for q, s in zip(quantified, self.ms_data.names) if s != srm_name])
 
     def detection_limit(self, method='intensity', scale='all', ablation_time=60):
         """

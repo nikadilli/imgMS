@@ -121,10 +121,6 @@ class Background():
     def __init__(self, isotope, laser_on, laser_off, width=0.8, offset=0.15):
         assert isotope.data is not None
 
-        # bacground only from the begining
-        self.bcg_begining = [isotope.data[:laser_on[0][0]].mean()
-                             for i in range(len(laser_off))]
-
         # background by means
         self.bcg_all = []
         for i in range(len(laser_off)):
