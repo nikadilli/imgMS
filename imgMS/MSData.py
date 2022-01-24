@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import pandas as pd
+from scipy import interpolate
 import warnings
 from decimal import Decimal
 import datetime
@@ -777,18 +778,35 @@ class Isotope():
                 self.logger.error(f'Unknown isotope: {self.isotope_name}.')
             return
 
-        import pdb
-        pdb.set_trace()
-
         if self.ms_data.names.count(srm_name) < 2:
             stdsig = np.mean(
                 [[m for m, s in zip(self.means, self.ms_data.names) if s == srm_name]])
+        elif self.ms_data.names.count(srm_name) == 2:
+            # stdsig_mskd = np.array(
+            #     [m if s == srm_name else np.nan for m, s in zip(self.means, self.ms_data.names)])
+            # not_nan = np.logical_not(np.isnan(stdsig_mskd))
+            # indices = np.arange(len(stdsig_mskd))
+            # stdsig = np.interp(indices, indices[not_nan], stdsig_mskd[not_nan])
+
+            x = np.array([i for i, s in enumerate(
+                self.ms_data.names) if s == srm_name])
+            y = np.array(
+                [m for m, s in zip(self.means, self.ms_data.names) if s == srm_name])
+            f = interpolate.interp1d(x, y, kind='slinear')
+
+            xnew = np.arange(len(self.means))
+            stdsig = f(xnew)
+
         else:
-            stdsig_mskd = np.array(
-                [m if s == srm_name else np.nan for m, s in zip(self.means, self.ms_data.names)])
-            not_nan = np.logical_not(np.isnan(stdsig_mskd))
-            indices = np.arange(len(stdsig_mskd))
-            stdsig = np.interp(indices, indices[not_nan], stdsig_mskd[not_nan])
+
+            x = np.array([i for i, s in enumerate(
+                self.ms_data.names) if s == srm_name])
+            y = np.array(
+                [m for m, s in zip(self.means, self.ms_data.names) if s == srm_name])
+            f = interpolate.interp1d(x, y, kind='quadratic')
+
+            xnew = np.arange(len(self.means))
+            stdsig = f(xnew)
 
         # TODO: interpolate standard signal by time, not every spot has to be the same length?
 
