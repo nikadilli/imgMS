@@ -8,8 +8,6 @@ import logging
 
 from imgMS.side_functions import *
 
-from IPython.core.debugger import set_trace
-
 
 class DataReader():
     """

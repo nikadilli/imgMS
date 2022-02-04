@@ -9,8 +9,7 @@ import datetime
 import logging
 import itertools
 
-# from imgMS.side_functions import *
-from side_functions import *
+from imgMS.side_functions import *
 from imgMS.MSEval import *
 
 
@@ -400,8 +399,6 @@ class MSData():
 
         # calculate coefficient for correction and correct data
         koef = suma/self.corrected_TS.sum(1)
-        import pdb
-        pdb.set_trace()
         self.corrected_TS = self.corrected_TS.multiply(np.array(koef), axis=0)
 
         # Return oxide form back to isotopes if not specified otherwise
