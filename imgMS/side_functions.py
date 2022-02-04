@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy as sp
+from scipy import stats
 import warnings
 from decimal import Decimal
 import datetime
@@ -215,3 +217,164 @@ def report(x, LoD, elem):
                 else:
                     if x >= 0:
                         return float(Decimal(x).quantize(Decimal('0.001')))
+
+
+ox_name = {'Na23': 'Na2O (%)',
+           'Mg24': 'MgO (%)',
+           'Al27': 'Al2O3 (%)',
+           'Si28': 'SiO2 (%)',
+           'P31': 'P2O5 (%)',
+           'K39': 'K2O (%)',
+           'Ca44': 'CaO (%)',
+           'Ti47': 'TiO2',
+           'Mn55': 'MnO (%)',
+           'Fe56': 'Fe2O3 (%)',
+           'Co59': 'CoO',
+           'Cu63': 'CuO (%)',
+           'Sn118': 'SnO2',
+           'Sb121': 'Sb2O3',
+           'Pb208': 'PbO'}
+
+ox_names = {el + ' oxide': ox for el, ox in ox_name.items()}
+
+cols_to_perc = [x for x in ox_names.values() if '%' in x]
+
+
+def z_score_method(df, variable_name, threshold=3):
+    # Takes two parameters: dataframe & variable of interest as string
+    columns = df.columns
+    z = np.abs(sp.stats.zscore(df))
+
+    outlier = []
+    index = 0
+    for item in range(len(columns)):
+        if columns[item] == variable_name:
+            index = item
+    for i, v in enumerate(z[:, index]):
+        if v > threshold:
+            outlier.append(i)
+        else:
+            continue
+    return outlier
+
+
+def multivariate_outliers(df, cols=cols_to_perc, threshold=3):
+    outliers = []
+    for column in cols:
+        outliers.extend(z_score_method(df, column, threshold))
+
+    out_dict = {i: outliers.count(i) for i in range(len(df))}
+    multi_out = [key for key, val in out_dict.items() if val > 7]
+
+    return multi_out
+
+
+def formatted_export(frame, path):
+    writer = pd.ExcelWriter(path, engine='xlsxwriter')
+
+    # Exporting analysis with outliers marked by red colour
+
+    outliers = {}
+
+    frame.replace('< LoD', np.nan, inplace=True)
+    grouped = frame.groupby(frame.index)
+
+    outliers_list = []
+    for sample, group in grouped:
+        if len(group) < 3:
+            continue
+        outliers[sample] = multivariate_outliers(group, threshold=1)
+
+    frame.replace(np.nan, '< LoD', inplace=True)
+    frame.to_excel(writer, sheet_name='Outliers')
+
+    # formatting of excel
+    workbook = writer.book
+    worksheet = writer.sheets['Outliers']
+
+    outlier_fmt = workbook.add_format({'color': 'red'})
+
+    counter = 0
+    tmp = ''
+    for i, (sample, row) in enumerate(frame.iterrows()):
+        if sample not in outliers.keys():
+            continue
+
+        if sample == tmp:
+            counter += 1
+        else:
+            counter = 0
+            tmp = sample
+            idxs = outliers[sample]
+
+        if counter in idxs:
+            worksheet.set_row(row=i+1, cell_format=outlier_fmt)
+
+    # exporting stats without outliers
+
+    frame.replace('< LoD', np.nan, inplace=True)
+    grouped = frame.groupby(frame.index)
+    sumary = pd.DataFrame(columns=pd.concat(
+        [pd.Series(['sample', 'stat']), pd.Series(frame.columns)]))
+    if 'LoD' in frame.index:
+        sumary = sumary.append(pd.concat(
+            [pd.Series({'sample': 'LoD', 'stat': '-'}), frame.loc['LoD']]), ignore_index=True)
+
+    # calculating stats
+    for name, group in grouped:
+        if name == 'LoD':
+            continue
+
+        # remove outliers
+        # if name in outliers.keys():
+        #     group.reset_index(inplace=True)
+        #     group.drop(outliers[name], inplace=True)
+        #     group.index = group['index']
+        #     group.drop(['index'], axis=1, inplace=True)
+
+        priemer = pd.concat(
+            [pd.Series({'sample': name, 'stat': 'mean'}), group.mean()])
+        sd = pd.concat(
+            [pd.Series({'sample': name, 'stat': '2*std'}), group.std()*2])
+        maxim = pd.concat(
+            [pd.Series({'sample': name, 'stat': 'max'}), group.max()])
+        minim = pd.concat(
+            [pd.Series({'sample': name, 'stat': 'min'}), group.min()])
+        med = pd.concat(
+            [pd.Series({'sample': name, 'stat': 'median'}), group.median()])
+
+        sumary = pd.concat(
+            [sumary, pd.concat([priemer, sd, maxim, minim, med], axis=1).transpose()])
+
+    sumary.replace(np.nan, '< LoD', inplace=True)
+
+    sumary.to_excel(writer, sheet_name='Stats', index=False)
+
+    # formatting of excel
+    workbook = writer.book
+    worksheet = writer.sheets['Stats']
+
+    lod_fmt = workbook.add_format({'bold': True})
+    bold_fmt = [workbook.add_format({'bg_color': '#E4FAEE', 'top': 1, 'bold': True}),
+                workbook.add_format({'bg_color': '#FAF3E4', 'top': 1, 'bold': True})]
+    normal_fmt = [workbook.add_format({'bg_color': '#E4FAEE', 'bold': False}),
+                  workbook.add_format({'bg_color': '#FAF3E4', 'bold': False})]
+
+    worksheet.set_row(row=1, cell_format=lod_fmt)
+
+    tmp = False
+
+    for i, (label, s) in enumerate(zip(sumary.index, sumary['sample'])):
+
+        if s == 'LoD':
+            continue
+
+        if label == 0:
+            worksheet.set_row(row=i+1, cell_format=bold_fmt[int(tmp)])
+        else:
+            worksheet.set_row(row=i+1, cell_format=normal_fmt[int(tmp)])
+
+        if label == 4:
+            tmp = not tmp
+
+    writer.save()

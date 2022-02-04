@@ -9,7 +9,8 @@ import datetime
 import logging
 import itertools
 
-from imgMS.side_functions import *
+# from imgMS.side_functions import *
+from side_functions import *
 from imgMS.MSEval import *
 
 
@@ -100,7 +101,7 @@ class MSData():
 
     def read_param(self, path):
         """
-        Import excel file with additional parameters (names of peaks, internal standard values, 
+        Import excel file with additional parameters (names of peaks, internal standard values,
         total sum correction coefficients) for data reduction. A sample PARAM file can be found in data folder.
 
         Parameters
@@ -152,13 +153,13 @@ class MSData():
             Name of the method to be used for identifying peaks. Possible options are 'treshold' and 'iolite'.
             Default is 'treshold'.
         selector: MSEval.Selector (optional)
-            Class for identifying peaks. If Selector is passed none of the other parameters are necessary. If not, 
+            Class for identifying peaks. If Selector is passed none of the other parameters are necessary. If not,
             Selector is created by selected settings.
         s: float (optional)
-            Start of the first peak in seconds from the start of analysis. Default is 60. Necessary if Selector is not 
+            Start of the first peak in seconds from the start of analysis. Default is 60. Necessary if Selector is not
             passed and used for synchronisation of data with iolite.
         sdmul: float (optional)
-            Coeficient by which a standard deviation of background is multiplied to calculate treshold. Only used if 
+            Coeficient by which a standard deviation of background is multiplied to calculate treshold. Only used if
             method = treshold.
         iolite: MSEval.Iolite (optional)
             Iolite class holding data from .Iolite file. Necessary if method = Iolite and Selector not passed.
@@ -177,7 +178,7 @@ class MSData():
 
     def graph(self, ax=None, logax=False, el=None, *args, **kwargs):
         """
-        Create matplotlib graph of intensity in time for ablation and highlights peaks and background signal 
+        Create matplotlib graph of intensity in time for ablation and highlights peaks and background signal
         if the peaks are already identifyied.
 
         Parameters
@@ -270,14 +271,14 @@ class MSData():
                 self.logger.error('Missing peak names.')
         return self.means
 
-    def quantify_isotopes(self, srm_name='NIST610'):
+    def quantify_isotopes(self, srm_name='NIST610', drift_correction=True):
         """
         Calculate quantified value for all peaks for all isotopes.
 
         Parameters
         ----------
         srm_name : str
-            Standard reference material used for quantification. The name must be at least one of the 
+            Standard reference material used for quantification. The name must be at least one of the
             peaks and listed in SRM file.
         Returns
         -------
@@ -292,26 +293,28 @@ class MSData():
                 if self.logger is not None:
                     self.logger.error(f'Missing srm {el}.')
 
-            isotope.quantify(srm_name=srm_name)
+            isotope.quantify(srm_name=srm_name,
+                             drift_correction=drift_correction)
             self.quantified[el] = isotope.quantified
 
         if self.logger is not None:
             self.logger.info(
                 f'Quantification of signal using SRM: {srm_name}.')
+
         self.quantified.index = [
             name for name in self.names if name != srm_name]
         return self.quantified
 
     def IS_correction(self):
         """
-        Calculates correction for each element given in internal standard correction 
+        Calculates correction for each element given in internal standard correction
         from PARAM file.
 
         Returns
         -------
         corrected data : dict
-            dict of internal standards used for correction as keys and DataFrames 
-            where index are peak names and columns are isotopes with values in ppm. 
+            dict of internal standards used for correction as keys and DataFrames
+            where index are peak names and columns are isotopes with values in ppm.
         """
         self.corrected_IS = {}
 
@@ -335,30 +338,30 @@ class MSData():
 
     def TS_correction(self, suma=1000000, skip_isotopes=[], return_oxides=False):
         """
-        Calculates total sum correction [1] using coefficients given in PARAM file. 
+        Calculates total sum correction [1] using coefficients given in PARAM file.
         If coefficients in PARAM file are not given, uses default values. Default values
         assume all elements are in most common oxide form.
 
-        [1] Liu, Y., Hu, Z., Gao, S., Günther, D., Xu, J., Gao, C. and Chen, H., 2008. 
-        In situ analysis of major and trace elements of anhydrous minerals by LA-ICP-MS 
+        [1] Liu, Y., Hu, Z., Gao, S., Günther, D., Xu, J., Gao, C. and Chen, H., 2008.
+        In situ analysis of major and trace elements of anhydrous minerals by LA-ICP-MS
         without applying an internal standard. Chemical Geology, 257(1-2), pp.34-43.
 
         Parameters
         ----------
         suma : float
-            Total sum of measured elements in ppm used for correction. 
+            Total sum of measured elements in ppm used for correction.
             Normally is equal to 100% (default).
         skip_isotopes : list
-            List of isotopes to be skipped, in total sum correction one element 
+            List of isotopes to be skipped, in total sum correction one element
             can't be measured on multiple isotopes.
         return_oxides : bool
-            If True return data in oxide form as was used for total sum correction. 
+            If True return data in oxide form as was used for total sum correction.
             Default is False.
 
         Returns
         -------
         corrected data : DataFrame
-            DataFrame where index are peak names and columns are isotopes with values in ppm. 
+            DataFrame where index are peak names and columns are isotopes with values in ppm.
         """
         if self.param is not None:
             if not self.param.ts_coef:
@@ -394,9 +397,12 @@ class MSData():
                 continue
             self.corrected_TS[elem] = self.corrected_TS[elem] / \
                 ts_coef[key] * 100
+
         # calculate coefficient for correction and correct data
         koef = suma/self.corrected_TS.sum(1)
-        self.corrected_TS = self.corrected_TS.mul(list(koef), axis='rows')
+        import pdb
+        pdb.set_trace()
+        self.corrected_TS = self.corrected_TS.multiply(np.array(koef), axis=0)
 
         # Return oxide form back to isotopes if not specified otherwise
         if not return_oxides:
@@ -419,11 +425,11 @@ class MSData():
         Parameters
         ----------
         method : str
-            Possible methods ['integral','intensity']. LoD must be calculates same way as average of isotopes. 
+            Possible methods ['integral','intensity']. LoD must be calculates same way as average of isotopes.
         scale : str
-            Possible methods ['beginning', 'all']. LoD must be calculates same way as average of isotopes. 
+            Possible methods ['beginning', 'all']. LoD must be calculates same way as average of isotopes.
         ablation_time : int
-            Time in seconds of one ablation. Necessary only for method 'integral'. 
+            Time in seconds of one ablation. Necessary only for method 'integral'.
         """
         if self.logger is not None:
             self.logger.info(
@@ -470,7 +476,7 @@ class MSData():
         Parameters
         ----------
         path : str
-            Path to excel file where to save data. 
+            Path to excel file where to save data.
         """
 
         if self.logger is not None:
@@ -493,6 +499,34 @@ class MSData():
 
         writer.save()
 
+    def formated_export(self, path, table='quantified'):
+        """
+        Export all data to excel file in a formated style, containing means, sd, max and min for repeated samples.
+
+        Parameters
+        ----------
+        path : str
+            Path to excel file where to save data.
+        """
+
+        if self.logger is not None:
+            self.logger.info(
+                f'Saving data to: {path}.')
+
+        if table == 'quantified':
+            frame = self.quantified
+            formatted_export(frame, path)
+        elif table == 'TScorrected':
+            frame = self.corrected_TS
+            formatted_export(frame, path)
+        elif 'IScorrected' in table:
+            for elem in self.corrected_IS.keys():
+                formatted_export(self.corrected_IS[elem], "{0}_{2}.{1}".format(
+                    *path.rsplit('.', 1) + [elem]))
+        else:
+            raise ValueError(
+                f'{table} not in possible otions for table. Use quantified, TScorrected or IScorrected')
+
     def create_maps(self, despiked=False, bcgcor_method='all', dx=1, dy=1):
         """
         Create elemental distribution matrix for all isotopes.
@@ -502,13 +536,13 @@ class MSData():
         despiked : bool
             If True use despiked data, else use original. Default is False.
         bcgcor_method : str
-            Method of background calculation. Possible options are [None, 
+            Method of background calculation. Possible options are [None,
             'all', 'beginning', 'end']. Default is 'all'.
         dx : float
-            X-axis distance between two values, usually in μm. Can be 
+            X-axis distance between two values, usually in μm. Can be
             calculated by (scan speed [μm/s]/ integration time [s])
         dy : float
-            Y-axis distance between two values, usually in μm. Distance 
+            Y-axis distance between two values, usually in μm. Distance
             between two lines, usually equal to ablation spot size.)
         """
 
@@ -532,13 +566,13 @@ class MSData():
 
     def export_matrices(self, path, quantified=False):
         """
-        Export all elemental distribution data to excel file. Each isotope 
+        Export all elemental distribution data to excel file. Each isotope
         will be a matrix on one sheet.
 
         Parameters
         ----------
         path : str
-            Path to excel file where to save data. 
+            Path to excel file where to save data.
         """
 
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
@@ -554,13 +588,13 @@ class MSData():
 
     def import_matrices(self, path):
         """
-        Import all elemental distribution data from excel file. Each isotope 
+        Import all elemental distribution data from excel file. Each isotope
         will be a matrix on one sheet.
 
         Parameters
         ----------
         path : str
-            Path to the excel file. 
+            Path to the excel file.
         """
         for el, isotope in self.isotopes.items():
             isotope.elmap.read_matrix(path, el)
@@ -632,7 +666,7 @@ class Isotope():
     def despike(self, win=3, treshold=10):
         """
         Removes high outliers of the data using rolling mean and standard deviation.
-        Replace values that are greater than n standard deviations above the mean 
+        Replace values that are greater than n standard deviations above the mean
         with the mean adjacent values.
 
         Parameters
@@ -741,7 +775,7 @@ class Isotope():
                 return
         self.means = np.array(means)
 
-    def quantify(self, srm_name='NIST610'):
+    def quantify(self, srm_name='NIST610', drift_correction=True):
         """
         Calculate quantification of average peaks in Isotope.
 
@@ -778,35 +812,32 @@ class Isotope():
                 self.logger.error(f'Unknown isotope: {self.isotope_name}.')
             return
 
-        if self.ms_data.names.count(srm_name) < 2:
+        if drift_correction:
+            if self.ms_data.names.count(srm_name) < 2:
+                stdsig = np.mean(
+                    [[m for m, s in zip(self.means, self.ms_data.names) if s == srm_name]])
+            else:
+                # stdsig_mskd = np.array(
+                #     [m if s == srm_name else np.nan for m, s in zip(self.means, self.ms_data.names)])
+                # not_nan = np.logical_not(np.isnan(stdsig_mskd))
+                # indices = np.arange(len(stdsig_mskd))
+                # stdsig = np.interp(indices, indices[not_nan], stdsig_mskd[not_nan])
+
+                x = np.array([i for i, s in enumerate(
+                    self.ms_data.names) if s == srm_name])
+                y = np.array(
+                    [m for m, s in zip(self.means, self.ms_data.names) if s == srm_name])
+                f = interpolate.interp1d(
+                    x, y, kind='slinear', fill_value="extrapolate")
+
+                xnew = np.arange(len(self.means))
+                stdsig = f(xnew)
+
+                xnew = np.arange(len(self.means))
+                stdsig = f(xnew)
+        else:
             stdsig = np.mean(
                 [[m for m, s in zip(self.means, self.ms_data.names) if s == srm_name]])
-        elif self.ms_data.names.count(srm_name) == 2:
-            # stdsig_mskd = np.array(
-            #     [m if s == srm_name else np.nan for m, s in zip(self.means, self.ms_data.names)])
-            # not_nan = np.logical_not(np.isnan(stdsig_mskd))
-            # indices = np.arange(len(stdsig_mskd))
-            # stdsig = np.interp(indices, indices[not_nan], stdsig_mskd[not_nan])
-
-            x = np.array([i for i, s in enumerate(
-                self.ms_data.names) if s == srm_name])
-            y = np.array(
-                [m for m, s in zip(self.means, self.ms_data.names) if s == srm_name])
-            f = interpolate.interp1d(x, y, kind='slinear')
-
-            xnew = np.arange(len(self.means))
-            stdsig = f(xnew)
-
-        else:
-
-            x = np.array([i for i, s in enumerate(
-                self.ms_data.names) if s == srm_name])
-            y = np.array(
-                [m for m, s in zip(self.means, self.ms_data.names) if s == srm_name])
-            f = interpolate.interp1d(x, y, kind='quadratic')
-
-            xnew = np.arange(len(self.means))
-            stdsig = f(xnew)
 
         # TODO: interpolate standard signal by time, not every spot has to be the same length?
 
@@ -823,11 +854,11 @@ class Isotope():
         Parameters
         ----------
         method : str
-            Possible methods ['integral','intensity']. LoD must be calculates same way as average of isotopes. 
+            Possible methods ['integral','intensity']. LoD must be calculates same way as average of isotopes.
         scale : str
-            Possible methods ['beginning', 'all']. LoD must be calculates same way as average of isotopes. 
+            Possible methods ['beginning', 'all']. LoD must be calculates same way as average of isotopes.
         ablation_time: int
-            Time in seconds of one ablation. Necessary only for method 'integral'. 
+            Time in seconds of one ablation. Necessary only for method 'integral'.
         """
         if scale == 'all':
             bcg = np.array(
@@ -859,10 +890,10 @@ class Isotope():
         bcgcor_method : str (Optional)
             Method of background calculation. Possible options are [None, 'all', 'beginning', 'end']. Default is 'all'.
         dx : float
-            X-axis distance between two values, usually in μm. Can be 
+            X-axis distance between two values, usually in μm. Can be
             calculated by (scan speed [μm/s]/ integration time [s])
         dy : float
-            Y-axis distance between two values, usually in μm. Distance 
+            Y-axis distance between two values, usually in μm. Distance
             between two lines, usually equal to ablation spot size.)
         """
 
@@ -898,7 +929,7 @@ class Isotope():
 
 class Peak():
     """
-    Separate one peak of isotope data. 
+    Separate one peak of isotope data.
 
     Parameters
     ----------
@@ -1046,8 +1077,8 @@ class ElementalMap():
         Parameters
         ----------
         axis : str
-            Axis along which to flip over. The default, axis=None, 
-        will flip over all of the axes, axis=0 flip matrix vertically, 
+            Axis along which to flip over. The default, axis=None,
+        will flip over all of the axes, axis=0 flip matrix vertically,
         axis=1 flip matrixhorizontally.
         """
 
