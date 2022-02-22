@@ -181,6 +181,11 @@ class Iolite():
         names = list(self.data[' Comment'].dropna())
         return names
 
+    def on_and_off_times(self):
+        times = self.data['Timestamp'][self.data.ne(self.data.shift()).apply(
+            lambda x: x.index[x].tolist())[' Laser State']]
+        return times
+
 
 class Param():
     """
@@ -309,28 +314,17 @@ class Selector():
         if self.logger is not None:
             self.logger.info('Selecting peak bounds by iolite.')
 
-        lst = [x for x in self.iolite.data.loc[:6,
-                                               ' Comment'] if isinstance(x, str)]
+        times = self.iolite.on_and_off_times()
 
-        if len(lst) == 2:
-            if self.logger is not None:
-                self.logger.info('Selecting spots.')
-            difflst = get_diff_lst(self.iolite.data)
-        elif len(lst) == 1:
-            if self.logger is not None:
-                self.logger.info('Selecting lines.')
-            difflst = get_diff_lst_line(self.iolite.data)
-        else:
-            if self.logger is not None:
-                self.logger.error('Iolite selection failed.')
-
-        timeindex = []
-        for i in range(0, len(difflst)+1):
-            timeindex.append(sum(difflst[:i])+self.start)
-        index = [get_index(self.ms_data.data, x) for x in timeindex]
-
-        starts = [index[i] for i in range(len(index)) if i % 2 == 0]
-        ends = [index[i]+1 for i in range(len(index)) if i % 2 != 0]
+        starts = []
+        ends = []
+        for i, t in enumerate(times[1:]):
+            timeindex = get_difference(get_timestamp(
+                times[0]), get_timestamp(t)) + self.start
+            if i % 2 == 0:
+                starts.append(get_index(self.ms_data.data, timeindex))
+            if i % 2 != 0:
+                ends.append(get_index(self.ms_data.data, timeindex)+1)
 
         return starts, ends
 
