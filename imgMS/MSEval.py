@@ -48,13 +48,14 @@ class DataReader():
             Possible options are csv, xlsx and asc.
         instrument : str
             Type of the instrument used for measurement. If not specified, raw data is expected. 
-            Possible options are Agilent, and Element.
+            Possible options are Agilent, MC Nu-Sapphire, and Element.
 
         Returns
         -------
         data : dataframe
             `data` as a dataframe, which can be passed to MSData.
         """
+        cols_to_drop = []
 
         if instrument == 'Element':
             skipfooter = 4
@@ -64,6 +65,11 @@ class DataReader():
             skipfooter = 4
             header = 3
             drop = 3
+        elif instrument =='MC Nu-Sapphire':
+            skipfooter = 0
+            header = 73
+            drop = 0
+            cols_to_drop = ['Cycle', 'ID code']
         else:
             skipfooter = 0
             header = 0
@@ -88,6 +94,10 @@ class DataReader():
 
         else:
             warnings.warn('File type not supported.')
+
+        if cols_to_drop:
+            data = data.drop(cols_to_drop, axis=1)
+            
 
         return data
 
