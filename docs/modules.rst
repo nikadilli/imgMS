@@ -5,4 +5,3 @@ imgMS
    :maxdepth: 4
 
    imgMS
-   setup

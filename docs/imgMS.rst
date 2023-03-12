@@ -20,6 +20,14 @@ imgMS.MSEval module
    :undoc-members:
    :show-inheritance:
 
+imgMS.MSStats module
+--------------------
+
+.. automodule:: imgMS.MSStats
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 imgMS.side\_functions module
 ----------------------------
 
