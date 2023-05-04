@@ -61,33 +61,42 @@ class DataReader():
             skipfooter = 4
             header = 1
             drop = 9
+            index_col = 0
         elif instrument == 'Agilent':
             skipfooter = 4
             header = 3
             drop = 3
+            index_col = 0
         elif instrument =='MC Nu-Sapphire':
             skipfooter = 0
-            header = 73
+            header = 14
             drop = 0
-            cols_to_drop = ['Cycle', 'ID code']
+            index_col = 1
+            cols_to_drop = ['Cycle', 'Section', 'Type', 'Trigger Status']
         else:
             skipfooter = 0
             header = 0
             drop = 0
+            index_col = 0
 
         if filetype == 'xlsx':
             imported = pd.ExcelFile(filename)
             data = imported.parse(
-                0, index_col=0, skipfooter=skipfooter, header=header)
+                0, index_col=index_col, skipfooter=skipfooter, header=header)
             data = data.drop(data.index[:drop], axis=0)
 
         elif filetype == 'csv':
-            data = pd.read_csv(filename, sep=',', index_col=0, skipfooter=skipfooter,
+            data = pd.read_csv(filename, sep=',', index_col=index_col, skipfooter=skipfooter,
                                header=header, engine='python')
 
         elif filetype == 'asc':
-            data = pd.read_csv(filename, sep='\t', index_col=0, skipfooter=skipfooter,
+        	try:
+            	data = pd.read_csv(filename, sep='\t', index_col=index_col, skipfooter=skipfooter,
                                header=header, engine='python')
+            except:
+            	data = pd.read_csv(filename, sep=',', index_col=index_col, skipfooter=skipfooter,
+                               header=header, engine='python')
+                               
             data = data.drop(data.index[:drop], axis=0)
             data.dropna(axis=1, how='all', inplace=True)
             data = data.apply(pd.to_numeric, errors='coerce')
