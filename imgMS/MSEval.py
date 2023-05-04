@@ -91,11 +91,11 @@ class DataReader():
 
         elif filetype == 'asc':
         	try:
-            	data = pd.read_csv(filename, sep='\t', index_col=index_col, skipfooter=skipfooter,
-                               header=header, engine='python')
+            	data = pd.read_csv(filename, sep='\t', index_col=index_col, skipfooter=skipfooter, 
+            	                   header=header, engine='python')
             except:
             	data = pd.read_csv(filename, sep=',', index_col=index_col, skipfooter=skipfooter,
-                               header=header, engine='python')
+            	                   header=header, engine='python')
                                
             data = data.drop(data.index[:drop], axis=0)
             data.dropna(axis=1, how='all', inplace=True)
