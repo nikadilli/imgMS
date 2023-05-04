@@ -77,8 +77,10 @@ class interactive_average():
         self.fig.canvas.draw_idle()
         self.stats(self.array, ind)
 
-    def __call__(self, vmax=None):
-        self.fig, self.ax = plt.subplots()
+    def __call__(self, ax=None, vmax=None):
+    	self.ax = ax
+    	if self.ax == None:
+        	self.fig, self.ax = plt.subplots()
 
         self.im = self.ax.imshow(self.array, vmax=vmax)
         self.ax.set_xlim([0, self.shape[1]])
