@@ -90,7 +90,7 @@ class DataReader():
                                header=header, engine='python')
 
         elif filetype == 'asc':
-        	try:
+            try:
                 data = pd.read_csv(filename, sep='\t', index_col=index_col, skipfooter=skipfooter, header=header, engine='python')
             except:
                 data = pd.read_csv(filename, sep=',', index_col=index_col, skipfooter=skipfooter, header=header, engine='python')
