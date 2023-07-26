@@ -82,6 +82,7 @@ class interactive_average():
         """
         Calculates the statistical values (mean, std, sum, minimum, 
         maximum and median) from selected area of image.
+        
         Parameters
         ----------
         indices: list
