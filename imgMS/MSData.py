@@ -494,7 +494,7 @@ class MSData():
         for key, df in data.items():
             df.to_excel(writer, sheet_name=key)
 
-        writer.save()
+        writer.close()
 
     def formated_export(self, path, table='quantified'):
         """
@@ -581,7 +581,7 @@ class MSData():
                 df = pd.DataFrame(isotope.elmap.qmap,
                                   index=isotope.elmap.y, columns=isotope.elmap.x)
             df.to_excel(writer, sheet_name=el)
-        writer.save()
+        writer.close()
 
     def import_matrices(self, path):
         """
@@ -1057,7 +1057,7 @@ class ElementalMap():
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
         df = pd.DataFrame(self.matrix, index=self.y, columns=self.x)
         df.to_excel(writer, sheet_name=el)
-        writer.save()
+        writer.close()
 
     def rotate(self):
         """
