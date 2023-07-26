@@ -61,6 +61,7 @@ class interactive_average():
     def switch_elem(self, elem):
         """
         Change the element for interactive calculation
+        
         Parameters
         ----------
         elem: str
