@@ -142,6 +142,7 @@ class interactive_average():
         """
         Export calculated stat for every isotope in the selected area 
         into excel.
+        
         Parameters
         ----------
         filename: str
