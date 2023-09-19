@@ -15,7 +15,7 @@ import itertools
 
 stats_dict = {'mean':None, 'std':None, 'sum':None, 'min':None, 'max':None, 'med':None,}
 
-class interactive_average():
+class InteractiveAverage():
     """
     Creates interactive graph for the selection of the area of interest and
     calculates basic stats as mean, std, median, min and max. The values can
@@ -89,7 +89,7 @@ class interactive_average():
         List of bool to select which pixels are in the area.
         """
         for e in self.msdata.isotopes:
-            array = data.isotopes[e].elmap.matrix
+            array = self.msdata.isotopes[e].elmap.matrix
             lin = np.arange(array.size)
             newArray = np.array(array.flatten())
             mean = newArray[lin[indices]].mean()
@@ -175,6 +175,29 @@ class interactive_average():
         wks1.insert_image(8,3, '', {'image_data': imgdata})
 
         workbook.close()
+        
+
+if __name__ == "__main__":
+
+    import os
+
+    files = os.listdir('../../Ilaps-v2/InteractiveMean/Data')
+    files = [f for f in files if f.endswith('.xlsx')]
+
+    print (f'proccesing files: {files}')
+
+    for file in files:
+        matrices = pd.ExcelFile(f'../../Ilaps-v2/InteractiveMean/Data/{file}') 
+        d = MSData.MSData()
+        d.isotope_names = matrices.sheet_names
+        for el in d.isotope_names:
+            d.isotopes[el] = MSData.Isotope(el)
+            d.isotopes[el].elmap = MSData.ElementalMap()
+        d.import_matrices(matrices)
+    
+        IA = InteractiveAverage(d)
+        IA()
+
         
 
 
