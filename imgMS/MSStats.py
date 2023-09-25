@@ -54,6 +54,7 @@ class InteractiveAverage():
         self.pixy = np.arange(self.shape[0])
         self.xv, self.yv = np.meshgrid(self.pixx,self.pixy)
         self.pix = np.vstack( (self.xv.flatten(), self.yv.flatten()) ).T
+        print('pix', self.pix)
 
         self.array = np.array(self.matrix)
         self.array[np.isnan(self.array)] = 0
@@ -89,9 +90,10 @@ class InteractiveAverage():
         List of bool to select which pixels are in the area.
         """
         for e in self.msdata.isotopes:
-            array = self.msdata.isotopes[e].elmap.matrix
+            array = np.array(self.msdata.isotopes[e].elmap.matrix)
             lin = np.arange(array.size)
             newArray = np.array(array.flatten())
+            
             mean = newArray[lin[indices]].mean()
             std = newArray[lin[indices]].std()
             suma = newArray[lin[indices]].sum()
@@ -178,7 +180,8 @@ class InteractiveAverage():
         
 
 if __name__ == "__main__":
-
+        
+    '''
     import os
 
     files = os.listdir('../../Ilaps-v2/InteractiveMean/Data')
@@ -187,16 +190,45 @@ if __name__ == "__main__":
     print (f'proccesing files: {files}')
 
     for file in files:
-        matrices = pd.ExcelFile(f'../../Ilaps-v2/InteractiveMean/Data/{file}') 
-        d = MSData.MSData()
-        d.isotope_names = matrices.sheet_names
-        for el in d.isotope_names:
-            d.isotopes[el] = MSData.Isotope(el)
-            d.isotopes[el].elmap = MSData.ElementalMap()
-        d.import_matrices(matrices)
+    '''
+        
+
     
-        IA = InteractiveAverage(d)
-        IA()
+    reader = MSData.DataReader(filename='/Users/nika/Library/CloudStorage/OneDrive-MUNI/Geologie/apatit_slobodnik/190415/mapa1_data.csv', filetype='csv', instrument='raw')
+    data = MSData.MSData(reader)
+
+    iolite = MSEval.Iolite('/Users/nika/Library/CloudStorage/OneDrive-MUNI/Geologie/apatit_slobodnik/190415/mapa1.Iolite.csv')
+
+    data.select('iolite', s=10, iolite=iolite)
+
+    data.create_maps(bcgcor_method='beginning')
+
+    #data.isotopes['Ca44'].elmap()
+    #plt.show()
+
+    #mapa = data.isotopes['Ca44'].elmap
+    
+    lasso = InteractiveAverage(data, 'Ca44')
+    lasso()
+    lasso.export_stats('test_Ca.xlsx')
+    
+    print('=====================================')
+    
+    matrices = pd.ExcelFile('../../Ilaps-v2/InteractiveMean/Data/mapa1quant.xlsx') 
+    d = MSData.MSData()
+    d.isotope_names = matrices.sheet_names
+    for el in d.isotope_names:
+        d.isotopes[el] = MSData.Isotope(el)
+        d.isotopes[el].elmap = MSData.ElementalMap()
+    d.import_matrices(matrices)
+    
+    IA = InteractiveAverage(d)
+    IA()
+    
+    
+    
+    
+       
 
         
 
