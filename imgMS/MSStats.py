@@ -50,11 +50,13 @@ class InteractiveAverage():
         self.dx = self.elmap.dx
         self.dy = self.elmap.dy
         
+        self.x = [i*self.dx for i in range(self.matrix.shape[1])]
+        self.y = [i*self.dy for i in range(self.matrix.shape[0])]
+        
         self.pixx = np.arange(self.shape[1])
         self.pixy = np.arange(self.shape[0])
         self.xv, self.yv = np.meshgrid(self.pixx,self.pixy)
         self.pix = np.vstack( (self.xv.flatten(), self.yv.flatten()) ).T
-        print('pix', self.pix)
 
         self.array = np.array(self.matrix)
         self.array[np.isnan(self.array)] = 0
@@ -127,14 +129,15 @@ class InteractiveAverage():
         self.fig.canvas.draw_idle()
         self.stats(ind)
 
-    def __call__(self, ax=None, vmax=None):
+    def __call__(self, ax=None, **kwargs):
         self.ax = ax
         if self.ax == None:
             self.fig, self.ax = plt.subplots()
-
-        self.im = self.ax.imshow(self.array, vmax=vmax)
-        self.ax.set_xlim([0, self.shape[1]])
-        self.ax.set_ylim([0, self.shape[0]])
+            
+        #TODO: fix different size of pixels 
+        self.im = self.ax.imshow(self.array, **kwargs) # extent=[0, self.x[-1], self.y[-1], 0],
+        self.ax.set_xlim([0, self.shape[1]]) #  self.x[-1]
+        self.ax.set_ylim([0, self.shape[0]]) #  self.y[-1]
 
         lsso = LassoSelector(ax=self.ax, onselect=self.onSelect)
 
@@ -190,7 +193,7 @@ if __name__ == "__main__":
     print (f'proccesing files: {files}')
 
     for file in files:
-    '''
+    
         
 
     
@@ -225,9 +228,21 @@ if __name__ == "__main__":
     IA = InteractiveAverage(d)
     IA()
     
+    '''
     
     
+    matrices = pd.ExcelFile('./media-matice.xlsx') 
+    d = MSData.MSData()
+    d.isotope_names = matrices.sheet_names
+    for el in d.isotope_names:
+        d.isotopes[el] = MSData.Isotope(el)
+        d.isotopes[el].elmap = MSData.ElementalMap()
+    d.import_matrices(matrices)
     
+    IA = InteractiveAverage(d)
+    IA.switch_elem('C13')
+    IA(vmax=1000000, cmap='jet')
+    IA.export_stats('stats_media-matice.xlsx')
        
 
         

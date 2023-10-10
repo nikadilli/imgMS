@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name='imgMS',
-    version='0.2.10',
+    version='0.2.11',
     author='nikadilli',
     author_email='nikadilli@gmail.com',
     url="https://github.com/nikadilli/imgMS",
@@ -29,7 +29,6 @@ setuptools.setup(
         "Pillow",
         "scikit-learn",
         "scipy",
-        "sklearn",
         "statsmodels",
         "xlrd",
         "XlsxWriter"

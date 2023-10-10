@@ -5,7 +5,6 @@ patsy
 Pillow
 scikit-learn
 scipy
-sklearn
 statsmodels
 xlrd
 XlsxWriter
