@@ -481,9 +481,16 @@ class MSData():
                 f'Saving data to: {path}.')
 
         writer = pd.ExcelWriter(path, engine='xlsxwriter')
-        data = {'raw': self.data,
-                'average': self.means,
-                'quantified': self.quantified}
+        data = {}
+                
+        if self.data is not None:
+            data['raw'] = self.data
+            
+        if self.means is not None:
+            data['average'] = self.means
+            
+        if self.quantified is not None:
+            data['quantified'] = self.quantified
 
         if self.corrected_IS is not None:
             data.update(self.corrected_IS)

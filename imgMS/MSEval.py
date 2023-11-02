@@ -69,7 +69,10 @@ class DataReader():
             index_col = 0
         elif instrument =='MC Nu-Sapphire':
             skipfooter = 0
-            header = 14
+            if filetype == 'txt':
+                header = 73
+            else:
+                header = 14
             drop = 0
             index_col = 1
             cols_to_drop = ['Cycle', 'Section', 'Type', 'Trigger Status']
@@ -86,6 +89,10 @@ class DataReader():
             data = data.drop(data.index[:drop], axis=0)
 
         elif filetype == 'csv':
+            data = pd.read_csv(filename, sep=',', index_col=index_col, skipfooter=skipfooter,
+                               header=header, engine='python')
+                               
+        elif filetype == 'txt':
             data = pd.read_csv(filename, sep=',', index_col=index_col, skipfooter=skipfooter,
                                header=header, engine='python')
 
